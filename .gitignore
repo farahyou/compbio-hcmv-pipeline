@@ -1,0 +1,18 @@
+# Large raw reads
+full_input_reads/
+
+# Generated outputs
+pipeline_outputs/
+PipelineReport.txt
+
+# Reference downloads
+reference_genome/hcmv.zip
+reference_genome/ncbi_dataset/
+
+# Bowtie2 index files
+reference_genome/hcmv_index*.bt2
+reference_genome/*.bt2
+
+# Editor junk
+.DS_Store
+*.swp
