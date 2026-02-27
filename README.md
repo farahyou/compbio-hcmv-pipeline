@@ -10,13 +10,46 @@ This repository contains my Snakemake workflow for automating steps 2–5 of the
 
 The pipeline is built so that the user can clone the repository and run the complete workflow on included sample test data with a single command.
 
+---
+
+## Step 1  Downloading FASTQ Files from SRA
+
+Step 1 (retrieving reads from SRA and converting to paired end FASTQ files) was completed using the SRA Toolkit.
+
+The following samples were downloaded:
+
+- SRR5660030  
+- SRR5660033  
+- SRR5660044  
+- SRR5660045  
+
+Example commands used:
+
+```
+prefetch SRR5660030
+fasterq-dump SRR5660030 --split-files
+```
+
+This produces paired-end FASTQ files:
+
+```
+SRR5660030_1.fastq
+SRR5660030_2.fastq
+```
+
+The full FASTQ files were used to generate `Younis_PipelineReport.txt`.  
+For testing and grading purposes, a small subset of reads is included in the `sample_test_data/` directory so the pipeline can run quickly.
+
+Steps 2–5 are fully automated using the `Snakefile`.
+
+---
 
 ## Repository Contents
 
-- `Snakefile` – Complete Snakemake workflow 
-- `sample_test_data/` – Small paired end FASTQ files intended for quick testing  
+- `Snakefile` – Complete Snakemake workflow  
+- `sample_test_data/` – Small paired-end FASTQ files intended for quick testing  
 - `reference_genome/` – Reference genome and automatically generated BLAST database inputs  
-- `Younis_PipelineReport.txt` – Final report generated from running the pipeline on the full dataset 
+- `Younis_PipelineReport.txt` – Final report generated from running the pipeline on the full dataset  
 
 All intermediate outputs are written to `pipeline_outputs/` but are ignored via `.gitignore`.
 
@@ -24,7 +57,7 @@ All intermediate outputs are written to `pipeline_outputs/` but are ignored via 
 
 ## Software Requirements
 
-The following programs have to be installed and available in your PATH:
+The following programs must be installed and available in your PATH:
 
 - Snakemake  
 - Bowtie2  
@@ -33,8 +66,6 @@ The following programs have to be installed and available in your PATH:
 - NCBI Datasets CLI (`datasets`)  
 - unzip  
 - Standard Unix utilities (awk, grep, find, xargs, gzip)
-
-
 
 ---
 
@@ -46,7 +77,7 @@ From the root of the repository:
 snakemake --cores 4
 ```
 
-This command will(without any manual editing):
+This command will (without any manual editing):
 
 1. Build a Bowtie2 index for the HCMV reference genome  
 2. Filter reads that map to HCMV  
@@ -58,16 +89,14 @@ This command will(without any manual editing):
 8. Generate the final report:
 
 ```
-PipelineReport.txt
+Younis_PipelineReport.txt
 ```
-
-
 
 ---
 
 ## Notes
 
-- The `sample_test_data/` directory is included so the workflow can be tested quickly
-- Betaherpesvirinae genomes are downloaded automatically using the NCBI `datasets` CLI
-- Only the best HSP per subject is retained in the BLAST results
-- Intermediate outputs are written to `pipeline_outputs/` and are not tracked in the repository
+- The `sample_test_data/` directory is included so the workflow can be tested quickly.
+- Betaherpesvirinae genomes are downloaded automatically using the NCBI `datasets` CLI.
+- Only the best HSP per subject is retained in the BLAST results.
+- Intermediate outputs are written to `pipeline_outputs/` and are not tracked in the repository.
