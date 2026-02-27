@@ -1,73 +1,73 @@
-HCMV Snakemake Pipeline Project
+# COMP 383 – HCMV Snakemake Pipeline by Farah Younis
 
-This project builds a reproducible Snakemake workflow to analyze RNA-seq data from cells infected with Human Cytomegalovirus (HCMV). The pipeline filters sequencing reads to retain only viral reads, assembles those reads into longer contigs, and compares the assembled sequences to known viral genomes to determine which strains they most closely match. The final output of the workflow is a file called PipelineReport.txt containing read statistics, assembly statistics, and BLAST results for each sample.
+This repository contains my Snakemake workflow for automating steps 2–5 of the HCMV transcriptome analysis project. The workflow does:
+
+- Bowtie2 read filtering against the HCMV reference genome  
+- SPAdes assembly of filtered reads (k=99)  
+- Assembly statistics calculation (>1000 bp contigs and total bp)  
+- Longest contig extraction  
+- BLAST analysis restricted to the Betaherpesvirinae subfamily  
+
+The pipeline is built so that the user can clone the repository and run the complete workflow on included sample test data with a single command.
 
 
-Step 1 :Manual Download of FASTQ Files
+## Repository Contents
+
+- `Snakefile` – Complete Snakemake workflow 
+- `sample_test_data/` – Small paired end FASTQ files intended for quick testing  
+- `reference_genome/` – Reference genome and automatically generated BLAST database inputs  
+- `Younis_PipelineReport.txt` – Final report generated from running the pipeline on the full dataset 
+
+All intermediate outputs are written to `pipeline_outputs/` but are ignored via `.gitignore`.
+
+---
+
+## Software Requirements
+
+The following programs have to be installed and available in your PATH:
+
+- Snakemake  
+- Bowtie2  
+- SPAdes  
+- BLAST+ (makeblastdb, blastn)  
+- NCBI Datasets CLI (`datasets`)  
+- unzip  
+- Standard Unix utilities (awk, grep, find, xargs, gzip)
 
 
-The following SRA runs were downloaded:
 
-SRR5660030 (Donor 1, 2dpi)
-SRR5660033 (Donor 1, 6dpi)
-SRR5660044 (Donor 3, 2dpi)
-SRR5660045 (Donor 3, 6dpi)
+---
 
-The FASTQ files were generated using fasterq-dump with paired-end splitting:
+## Running the Pipeline on Sample Test Data
 
-mkdir -p full_input_reads
-cd full_input_reads
+From the root of the repository:
 
-fasterq-dump SRR5660030 --split-files --threads 8
-fasterq-dump SRR5660033 --split-files --threads 8
-fasterq-dump SRR5660044 --split-files --threads 8
-fasterq-dump SRR5660045 --split-files --threads 8
+```
+snakemake --cores 4
+```
 
-gzip *.fastq
-cd ..
+This command will(without any manual editing):
 
-Small subsets of these FASTQ files (first 10,000 reads) are included in the folder:
+1. Build a Bowtie2 index for the HCMV reference genome  
+2. Filter reads that map to HCMV  
+3. Assemble filtered reads using SPAdes (k-mer size 99)  
+4. Compute assembly statistics (>1000 bp contigs and total bp)  
+5. Download Betaherpesvirinae genomes from NCBI  
+6. Build a local BLAST nucleotide database  
+7. BLAST the longest contig from each assembly  
+8. Generate the final report:
 
-sample_test_data/
-
-These are used for testing the pipeline quickly.
-
-Software that is required: 
-
-The following software tools must be installed:
-
-- Snakemake
-- Bowtie2
-- Samtools
-- SPAdes
-- BLAST+
-- NCBI datasets / edirect
-- Python 3
-
-Running the Pipeline (Test Data): 
-
-From the main project directory:
-
-snakemake -j 8
-
-This will run steps 2–5 using the files in sample_test_data/ and generate:
+```
 PipelineReport.txt
-
-All intermediate output files are written to:
-
-pipeline_outputs/
+```
 
 
-Running the Pipeline with Full Reads:
 
-Place the full FASTQ files in:
+---
 
-full_input_reads/
+## Notes
 
-Then update the READS_DIR variable in the Snakefile to:
-
-READS_DIR = "full_input_reads"
-
-Run:
-
-snakemake -j 8
+- The `sample_test_data/` directory is included so the workflow can be tested quickly
+- Betaherpesvirinae genomes are downloaded automatically using the NCBI `datasets` CLI
+- Only the best HSP per subject is retained in the BLAST results
+- Intermediate outputs are written to `pipeline_outputs/` and are not tracked in the repository
