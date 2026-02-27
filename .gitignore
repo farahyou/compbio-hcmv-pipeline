@@ -28,4 +28,14 @@ reference_genome/*.zip
 
 # Editor junk
 .DS_Store
-*.swp
+*.swp.snakemake/
+
+# generated downloads / databases
+reference_genome/beta_dataset/
+reference_genome/betaherpes_datasets/
+reference_genome/betaherpesvirinae_genomes.fna
+reference_genome/betaherpes_datasets.zip
+reference_genome/betaherpes_blastdb.*
+reference_genome/hcmv_index.*
+pipeline_outputs/
+.snakemake/
