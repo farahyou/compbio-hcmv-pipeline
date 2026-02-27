@@ -89,7 +89,7 @@ This command will (without any manual editing):
 8. Generate the final report:
 
 ```
-Younis_PipelineReport.txt
+PipelineReport.txt
 ```
 
 ---
@@ -100,3 +100,5 @@ Younis_PipelineReport.txt
 - Betaherpesvirinae genomes are downloaded automatically using the NCBI `datasets` CLI.
 - Only the best HSP per subject is retained in the BLAST results.
 - Intermediate outputs are written to `pipeline_outputs/` and are not tracked in the repository.
+- `Younis_PipelineReport.txt` – Report generated from running the pipeline on the full dataset.
+- `PipelineReport.txt` – Report generated automatically when running the workflow on the included sample test data.
