@@ -1,10 +1,15 @@
 import os
 import glob
 
-#Folder that contains the paired-end FASTQ files for testing purposes since it is sample_test_data 
+# Folder that contains the paired-end FASTQ files for testing purposes since it is sample_test_data
+# I keep this as "sample_test_data" for the graded/test run so anyone cloning my repo can run quickly.
+# When I want to do a full run, I just change this to "full_input_reads" (same naming pattern).
 reads_directory = "sample_test_data"
 
-#Reference genome FASTA used for Bowtie2 mapping.
+# Reference genome FASTA used for Bowtie2 mapping.
+# This is the HCMV reference genome (GCF_000845245.1) that I downloaded using NCBI Datasets and kept inside the repo.
+# Bowtie2 needs a single FASTA to build an index; I map reads to this genome to keep only HCMV-matching read pairs.
+
 reference_fasta = (
     "reference_genome/ncbi_dataset/data/GCF_000845245.1/"
     "GCF_000845245.1_ViralProj14559_genomic.fna"
@@ -19,12 +24,11 @@ betaherpes_fasta = "reference_genome/betaherpesvirinae_genomes.fna"
 #BLAST database prefix- makeblastdb creates multiple files using this prefix
 betaherpes_blastdb_prefix = "reference_genome/betaherpes_blastdb"
 
-
-
 # this is where the datasets download zip will be saved
 BETAHERPES_ZIP = "reference_genome/betaherpes_datasets.zip"
 
 #where the zip contents will be extracted.
+#I keep the extracted folder separate from the final concatenated FASTA so it's easier to debug if something goes wrong.
 BETAHERPES_DIR = "reference_genome/betaherpes_datasets"
 
 #final report file
@@ -37,7 +41,7 @@ spades_threads = 4
 #Column order for BLAST output (sacc = subject accession, pident = percent identity, etc.
 BLAST_COLS = "sacc pident length qstart qend sstart send bitscore evalue stitle"
 
-#Output folders for each stage 
+#Output folders for each stage. this keeps the results organized and makes it easy to find specific files. 
 mapped_reads_folder = "pipeline_outputs/mapped_reads"
 sam_folder = "pipeline_outputs/sam"
 counts_folder = "pipeline_outputs/counts"
@@ -48,8 +52,8 @@ blast_folder = "pipeline_outputs/blast"
 
 
 def detect_samples(reads_dir):
-    # This looks through the reads folder and finds sample IDs automatically.
-    # It searches for files ending in _1.fastq or _1.fastq.gz and checks that the matching _2 file exists.
+    #This looks through the reads folder and finds sample IDs automatically
+    #It searches for files ending in _1.fastq or _1.fastq.gz and checks that the matching _2 file exists
     patterns = [
         os.path.join(reads_dir, "*_1.fastq.gz"),
         os.path.join(reads_dir, "*_1.fastq"),
@@ -65,6 +69,8 @@ def detect_samples(reads_dir):
         base = os.path.basename(r1)
 
         #Strip the R1 suffix to get the sample name, then construct the expected R2 path.
+        # I do it this way so the same code works for both gzipped and non-gzipped FASTQs.
+
         if base.endswith("_1.fastq.gz"):
             sample = base[:-len("_1.fastq.gz")]
             r2 = os.path.join(reads_dir, sample + "_2.fastq.gz")
@@ -72,7 +78,7 @@ def detect_samples(reads_dir):
             sample = base[:-len("_1.fastq")]
             r2 = os.path.join(reads_dir, sample + "_2.fastq")
 
-        #Only accept the sample if R2 exists so we don’t accidentally run single-end data.
+        #Only accept the sample if R2 exists so we don’t accidentally run single end data.
         if os.path.exists(r2):
             samples.append(sample)
 
@@ -87,25 +93,28 @@ def detect_samples(reads_dir):
 
 
 def r1_path(sample):
-    # since some of the datasets are gzipped and some are not,  this checks both options.
+    # Since some datasets are gzipped and some are not, I check both options.
     p1 = os.path.join(reads_directory, f"{sample}_1.fastq.gz")
     p2 = os.path.join(reads_directory, f"{sample}_1.fastq")
     return p1 if os.path.exists(p1) else p2
 
 
 def r2_path(sample):
+    # Same idea as r1_path but for R2.
     p1 = os.path.join(reads_directory, f"{sample}_2.fastq.gz")
     p2 = os.path.join(reads_directory, f"{sample}_2.fastq")
     return p1 if os.path.exists(p1) else p2
 
 
-#automatically detect samples from the reads folder.
+# automatically detect samples from the reads folder.
+# this becomes the list I expand over in my rules (so every sample runs through the same pipeline)
 sample_ids = detect_samples(reads_directory)
 
 
 rule all:
-    #This is the finish line for the workflow
+    # This is the final target that Snakemake tries to build when you run `snakemake` with no arguments
     # When these files exist, all steps have run successfully.
+    # I include the BLAST db .nin file so the workflow also builds the database automatically.
     input:
         report_file,
         expand(spades_folder + "/{sample_id}/contigs.fasta", sample_id=sample_ids),
@@ -227,7 +236,7 @@ rule spades_assembly:
 
 
 rule assembly_stats:
-    # Calculates two things from the assembly:
+    # Calculates two things from the assembly
     # 1) number of contigs longer than 1000 bp
     # 2) total base pairs across contigs longer than 1000 bp
     input:
@@ -332,11 +341,13 @@ rule build_betaherpes_fasta:
         """
 
 
+#download → unzip → concatenate → make BLAST DB is the logical flow to get from NCBI Datasets to a local BLAST database of Betaherpesvirinae genomes
+#Converting my Betaherpes FASTA file into a searchable BLAST database so I can identify which strains my assembled contig matches
 rule make_betaherpes_blastdb:
     input:
-        rules.build_betaherpes_fasta.output
+        rules.build_betaherpes_fasta.output #This ensures the FASTA is built before making BLAST database 
     output:
-        betaherpes_blastdb_prefix + ".nin"
+        betaherpes_blastdb_prefix + ".nin" #when you run makeblastdb, it creates several files with the given prefix; .nin is one of them and is a good indicator that the database was created successfully 
     shell:
         r"""
         makeblastdb \
@@ -367,6 +378,8 @@ rule blast_longest_contig:
           -max_target_seqs 5 \
           -max_hsps 1
         """
+# -max_target_seqs 5 keeps the output small by only saving the top 5 subject hits.
+# -max_hsps 1 ensures that if there are multiple HSPs to the same subject only the best one is kept which simplifies the report 
 
 
 rule make_report:
@@ -394,26 +407,25 @@ rule make_report:
                 )
 
             out.write("\n")
-
+            #This summarizes the contigs produced by SPAdes, focusing on contigs > 1000 bp.
             for sample_id in sample_ids:
                 with open(f"{assembly_stats_folder}/{sample_id}_assembly_stats.txt") as f:
                     out.write(f.read().strip() + "\n")
 
             out.write("\n")
-
+            #This is my “strain identification” section based on the longest contig from each sample.
             for sample_id in sample_ids:
                 out.write(f"{sample_id}:\n")
+                # I print the BLAST column header once per sample so the TSV columns are clear in the report 
                 out.write(f"{BLAST_COLS}\n")
 
                 blast_path = f"{blast_folder}/{sample_id}_blast_top5.tsv"
-
+                # If blast returned hits, write them into the report exactly as-is 
+                # If blast returned no hits, I print a clear placeholder instead of leaving it blank
                 if os.path.exists(blast_path) and os.path.getsize(blast_path) > 0:
                     with open(blast_path) as f:
                         out.write(f.read().rstrip() + "\n")
                 else:
                     out.write("NO_HITS_FOUND\n")
 
-                out.write("\n")
-
-
-     
+                out.write("\n") #Blank line between samples 
