@@ -1,17 +1,30 @@
 # Large raw reads
 full_input_reads/
 
+# Snakemake working directory
+.snakemake/
+
 # Generated outputs
 pipeline_outputs/
-PipelineReport.txt
 
-# Reference downloads
-reference_genome/hcmv.zip
-reference_genome/ncbi_dataset/
+# Mapping files
+*.sam
 
 # Bowtie2 index files
-reference_genome/hcmv_index*.bt2
-reference_genome/*.bt2
+*.bt2
+
+# BLAST database files
+*.nin
+*.nhr
+*.nsq
+*.ndb
+*.not
+*.ntf
+*.nto
+
+# Large reference downloads
+reference_genome/ncbi_dataset/
+reference_genome/*.zip
 
 # Editor junk
 .DS_Store
