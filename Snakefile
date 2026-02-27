@@ -19,8 +19,7 @@ betaherpes_fasta = "reference_genome/betaherpesvirinae_genomes.fna"
 #BLAST database prefix- makeblastdb creates multiple files using this prefix
 betaherpes_blastdb_prefix = "reference_genome/betaherpes_blastdb"
 
-#NCBI taxonomy id for Betaherpesvirinae (used by the datasets CLI).
-BETAHERPES_TAXID = "10357"
+
 
 # this is where the datasets download zip will be saved
 BETAHERPES_ZIP = "reference_genome/betaherpes_datasets.zip"
@@ -290,7 +289,7 @@ rule download_betaherpes_datasets:
         r"""
         mkdir -p $(dirname {output})
 
-        datasets download virus genome taxon {BETAHERPES_TAXID} \
+        datasets download virus genome taxon Betaherpesvirinae \
           --include genome \
           --filename {output}
         """
